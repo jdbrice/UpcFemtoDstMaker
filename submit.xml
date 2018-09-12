@@ -1,0 +1,27 @@
+<job  name="MuDst2FemtoDst_Run15_pp200"  simulateSubmission ="false" maxFilesPerProcess="10" filesPerHour="50" >
+
+	<stdout URL="file:/star/data03/pwg/jdb/scratch/log/log_$JOBID.log" />
+	<stderr URL="file:/star/data03/pwg/jdb/scratch/log/err_$JOBID.err" />
+
+	<output fromScratch="*FemtoDst.root" toURL="file:/star/data03/pwg/jdb/scratch/" />
+
+	<input URL="catalog:star.bnl.gov?trgsetupname=AuAu200_production_2011,filetype=daq_reco_MuDst,filename~st_upc,storage=local" nFiles="50000" />
+
+	<command>
+		starver SL16d
+		root4star -b -q -l 'make.C( "'$FILELIST'" )'
+		mv FemtoDst.root output_AuAu_${JOBID}_FemtoDst.root
+	</command>
+
+	<SandBox>
+		<Package>
+			<File>file:./StRoot</File>
+			<File>file:./.sl73_gcc485</File>
+			<File>file:./make.C</File>
+		</Package> 
+	</SandBox>
+
+	<Generator> 
+		<Location>/star/data03/pwg/jdb/scratch/gen</Location> 
+	</Generator> 
+</job>

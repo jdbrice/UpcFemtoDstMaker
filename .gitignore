@@ -1,0 +1,15 @@
+*.session.xml
+paw.metafile
+.sl64_gcc482
+*.root
+temp_gccflags.c
+*CVS
+*.html
+*doc
+*.consign
+*.cvsignore
+log
+log_*
+.sl73_gcc485/
+.vscode/
+.modules
