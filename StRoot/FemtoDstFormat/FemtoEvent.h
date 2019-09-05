@@ -24,6 +24,15 @@ public:
 		mNVerts            = 0;
 		mNVpdEast          = 0;
 		mNVpdWest          = 0;
+		mZDCEast           = 0;
+		mZDCWest           = 0;
+		mBBCEast           = 0;
+		mBBCWest           = 0;
+		mBBCLEast          = 0;
+		mBBCLWest          = 0;
+		mTofMultTrg        = 0;
+		for ( size_t i = 0; i < 8; i++ )
+			mLastDsmBit[i] = 0;
 	}
 	~FemtoEvent() {}
 
@@ -44,6 +53,15 @@ public:
 		this->mRanking 		     = that->mRanking;
 		this->mNVpdEast 		 = that->mNVpdEast;
 		this->mNVpdWest 		 = that->mNVpdWest;
+		this->mZDCEast 			 = that->mZDCEast;
+		this->mZDCWest 			 = that->mZDCWest;
+		this->mBBCEast 			 = that->mBBCEast;
+		this->mBBCWest 			 = that->mBBCWest;
+		this->mBBCLEast 		 = that->mBBCLEast;
+		this->mBBCLWest 		 = that->mBBCLWest;
+		this->mTofMultTrg 		 = that->mTofMultTrg;
+		for ( size_t i = 0; i < 8; i++ )
+			this->mLastDsmBit[i] = that->mLastDsmBit[i];
 	}
 
 	int year() const { return (mRunId / 1000000) - 1 + 2000; }
@@ -84,8 +102,16 @@ public:
 	UShort_t 	mNVpdEast;				// n Vpd East
 	UShort_t 	mNVpdWest;				// n Vpd West
 	UShort_t 	mRunIndex;				// the run index
+	UShort_t 	mZDCEast;				// Unattenuated ZDC East
+	UShort_t 	mZDCWest;				// Unattenuated ZDC West
+	UShort_t 	mBBCEast;				// Unattenuated BBC East
+	UShort_t 	mBBCWest;				// Unattenuated BBC West
+	UShort_t 	mBBCLEast;				// Unattenuated BBCLarge East
+	UShort_t 	mBBCLWest;				// Unattenuated BBCLarge West
+	UShort_t 	mTofMultTrg;			// TOF Mult from Trigger
+	UShort_t 	mLastDsmBit[8];			// Last DSM Bit (TCU)
 
-	ClassDef( FemtoEvent, 4 )
+	ClassDef( FemtoEvent, 7 )
 };
 
 

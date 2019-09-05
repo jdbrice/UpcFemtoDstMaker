@@ -13,3 +13,7 @@ log_*
 .sl73_gcc485/
 .vscode/
 .modules
+sandbox/
+test_LOG
+*.lis
+LOGLOG

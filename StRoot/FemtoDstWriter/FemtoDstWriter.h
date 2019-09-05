@@ -61,6 +61,13 @@ protected:
 
 	StMuPrimaryVertex *chooseVertex();
 
+	// JSON Export
+	void writeJSONRecord();
+	std::string jsonEvent( StMuEvent * event );
+	std::string jsonTrack( StMuTrack * track, bool prependComma = true );
+	std::string jsonTrackHeader( );
+	std::string jsonTrackFooter( );
+
 	TTree *_tree;
 	TFile *_rootFile;
 
@@ -101,6 +108,7 @@ protected:
 	TH1F *h_GRefMult, *h_RefMult, *h_nBTofMatched, *h_nBTofHits, *h_nVpdHits;
 	TH2F *h_GRefMult_RefMult, *h_vz_RefMult, *h_vz_GRefMult, *h_delta_vz_RefMult, *h_delta_vz_GRefMult, *h_vpd_vz_RefMult, *h_vpd_vz_GRefMult, *h_n_verts_GRefMult, *h_nBTofHits_RefMult, *h_nBTofMatched_RefMult;
 
+	bool MonteCarlo = false;
 
 	ClassDef(FemtoDstWriter, 1)
 };

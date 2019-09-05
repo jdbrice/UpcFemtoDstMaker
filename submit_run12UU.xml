@@ -10,7 +10,7 @@
 	<command>
 		starver SL16d
 		root4star -b -q -l 'make.C( "'$FILELIST'" )'
-		mv FemtoDst.root output_UU_${JOBID}_FemtoDst.root
+		mv FemtoDst.root output_Run12UU_${JOBID}_FemtoDst.root
 	</command>
 
 	<SandBox>

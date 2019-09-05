@@ -17,6 +17,9 @@ void make( const Char_t * fileList = "./filelist.lis" ){
 	// Maximums
 	Int_t nEvents = 50000000;
 	Int_t nfiles = 1000;
+	
+	// nEvents = 1000;
+
 
 	StChain  *chain = 0;
 	St_db_Maker *dbMk = 0;

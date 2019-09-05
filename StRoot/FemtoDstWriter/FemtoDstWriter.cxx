@@ -19,6 +19,7 @@
 #include "StEvent/StEventInfo.h"
 #include "StEvent/StPrimaryVertex.h"
 #include "StEvent/StBTofHeader.h"
+#include "StEvent/StTriggerData.h"
 
 
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
@@ -35,6 +36,7 @@
 
 // STL
 #include <vector>
+#include <sstream>
 #include <map>
 #include <algorithm>
 
@@ -148,6 +150,39 @@ Int_t FemtoDstWriter::Make()
 	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 400631 );
 	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 400641 );
 
+	// Run 14 Au+Au 200 GeV UPC_Main Trigger (450701, 450711)
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 450701 );
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 450711 );
+
+
+	// Run 10 Au+Au 200 GeV Minimum Bias
+	bool passMinBiasTrigger = false;
+	passMinBiasTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260001 );
+	passMinBiasTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260011 );
+	passMinBiasTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260021 );
+	passMinBiasTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260031 );
+
+	bool passZDCMonTrigger = false;
+	passZDCMonTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260002 );
+	// if ( passZDCMonTrigger ) { cout << "ZDCMon: " << 260002 << endl; }
+	passZDCMonTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260012 );
+	// if ( passZDCMonTrigger ) { cout << "ZDCMon: " << 260012 << endl; }
+	passZDCMonTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260022 );
+	// if ( passZDCMonTrigger ) { cout << "ZDCMon: " << 260022 << endl; }
+
+
+
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260001 );
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260011 );
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260021 );
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260031 );
+
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260002 );
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260012 );
+	passTrigger |= this->_StMuEvent->triggerIdCollection().nominal().isTrigger( 260022 );
+
+	
+
 
 	if ( false == passTrigger ){
 		// LOG_INFO << "REJECT TRIGGER" << endm;
@@ -155,8 +190,17 @@ Int_t FemtoDstWriter::Make()
 		// for ( size_t i = 0; i < this->_StMuEvent->triggerIdCollection().nominal().triggerIds().size(); i++ ){
 		// 	LOG_INFO  << "trigger : " << this->_StMuEvent->triggerIdCollection().nominal().triggerIds()[i] << endm;
 		// }
-		return kStOK;
+		return kStOK; //comment out for MC 
 	}
+
+	// if (false == passZDCMonTrigger){
+	// 	return kStOK;
+	// }
+	
+
+	LOG_INFO << "PASS TRIGGER" << endm;
+
+	
 
 	h_event_stats->Fill(1);
 
@@ -168,12 +212,37 @@ Int_t FemtoDstWriter::Make()
 	this->_fmtEvent.mRefMult  = this->_StMuEvent->refMult();
 	this->_fmtEvent.mNVerts   = this->_StMuDst->primaryVertices()->GetEntries();
 
-	StMuPrimaryVertex *pVertex = chooseVertex();
+	this->_fmtEvent.mZDCEast    = this->_StMuEvent->triggerData()->zdcUnAttenuated(east);
+	this->_fmtEvent.mZDCWest    = this->_StMuEvent->triggerData()->zdcUnAttenuated(west);
+	this->_fmtEvent.mBBCEast    = this->_StMuEvent->triggerData()->bbcADCSum(east);
+	this->_fmtEvent.mBBCWest    = this->_StMuEvent->triggerData()->bbcADCSum(west);
+	this->_fmtEvent.mBBCLEast   = this->_StMuEvent->triggerData()->bbcADCSumLargeTile(east);
+	this->_fmtEvent.mBBCLWest   = this->_StMuEvent->triggerData()->bbcADCSumLargeTile(west);
 
+	this->_fmtEvent.mTofMultTrg = this->_StMuEvent->triggerData()->tofMultiplicity();
+
+	for(Int_t j=0; j<8; j++){
+		   // = td->dsmTF201Ch(j);
+		this->_fmtEvent.mLastDsmBit[j] = this->_StMuEvent->triggerData()->lastDSM(j);
+	}
+
+
+	/******************************************/
+	/* VERTEX CHOICE */
+	/******************************************/
+	StMuPrimaryVertex *pVertex = chooseVertex(); // choose best vertex based on tof matches
+	
+	//StMuPrimaryVertex *pVertex = this->_StMuDst->primaryVertex(); // choose default
 	if ( nullptr == pVertex ){
 		LOG_INFO << "No Primary Vertex Found, skipping event" << endm;
 		return kStWarn;
 	}
+
+	// if ( passZDCMonTrigger) {
+	// 	// require low ref mult to save space and time
+	// 	if ( this->_StMuEvent->refMult() > 20 )
+	// 		return kStOK;
+	// }
 
 	h_event_stats->Fill(2);
 
@@ -278,8 +347,8 @@ Int_t FemtoDstWriter::Make()
 	h_nVpdHits->Fill( this->_fmtEvent.mNVpdEast + this->_fmtEvent.mNVpdWest );
 	h_nBTofHits_RefMult->Fill( this->_fmtEvent.mRefMult, this->_fmtEvent.mNBTofHits );
 
-	if ( this->_fmtEvent.mNTracks != 2 )
-		return kStOK;
+	// if ( this->_fmtEvent.mNTracks != 2 )
+	// 	return kStOK;
 
 	for (int iNode = 0; iNode < nPrimary; iNode++ ){
 		
@@ -304,13 +373,143 @@ Int_t FemtoDstWriter::Make()
 	
 	h_nBTofMatched_RefMult->Fill( this->_fmtEvent.mRefMult, this->_fmtEvent.mNBTofMatched );
 
-	if ( this->_fmtEvent.mNBTofMatched >= 2 ){
-		this->_tree->Fill();
-		h_event_stats->Fill(4);
-	}
+	
+	this->_tree->Fill();
+	h_event_stats->Fill(4);
+
+	// if ( this->_fmtEvent.mGRefMult <= 4 )
+	// 	writeJSONRecord();
+	
 	
 
 	return kStOK;
+
+}
+
+
+void FemtoDstWriter::writeJSONRecord(){
+
+	std::string record;
+	record = jsonEvent( this->_StMuEvent );
+	record += jsonTrackHeader();
+
+	size_t nPrimary = this->_StMuDst->numberOfPrimaryTracks();
+	Int_t n_glob = this->_StMuDst->GetNGlobalTrack();
+	for ( int i = 0; i < nPrimary; i++ ) {
+		// StMuTrack *track = this->_StMuDst->globalTracks(i);
+		StMuTrack *track = (StMuTrack*)this->_StMuDst->primaryTracks(i)->globalTrack();
+		if ( i == 0 )
+			record += jsonTrack( track, false );
+		else 
+			record += jsonTrack( track );
+
+	}
+
+	record += jsonTrackFooter();
+
+	std::stringstream sstr;
+	sstr << "EVENT_" << this->_StMuEvent->runId() << "_" << this->_StMuEvent->eventId() << ".json";
+	ofstream outf( sstr.str().c_str() );
+	outf << record;
+	outf.close();
+}
+
+std::string FemtoDstWriter::jsonEvent( StMuEvent * event ){
+	std::stringstream sstr;
+
+	sstr << "{\n"
+	<< "\t\"EVENT\": { \n"
+
+	<< "\t\"runid\": " << event->runNumber() << ",\n"
+	<< "\t\"evtid\": " << event->eventId() << ",\n"
+	<< "\t\"time\": " << event->eventInfo().time() << ",\n"
+	<< "\t\"type\": \"" << event->eventInfo().type() << "\",\n"
+	<< "\t\"s_nn\": " << event->runInfo().centerOfMassEnergy() << ",\n"
+	<< "\t\"part_yellow\": \"" << "au" << "\",\n"
+	<< "\t\"part_blue\": \"" << "au" << "\",\n"
+	<< "\t\"e_yellow\": " << "200" << ",\n"
+	<< "\t\"e_blue\": " << "200" << ",\n"
+	<< "\t\"pv\": [" 	<< event->primaryVertexPosition().x() << ","
+	<< event->primaryVertexPosition().y() << ","
+	<< event->primaryVertexPosition().z() << "]\n"
+	<< "},\n\n";
+	return sstr.str();
+}
+
+std::string FemtoDstWriter::jsonTrackHeader( ){
+	return  "\"TRACKS\": { \n"
+			"\t\"tracks\": [\n";
+}
+
+std::string FemtoDstWriter::jsonTrackFooter( ){
+	return  "] }\n}\n";
+}
+
+
+std::string FemtoDstWriter::jsonTrack( StMuTrack * track, bool prependComma ){
+
+	StPhysicalHelixD helix = track->helix();
+	float length = track->lengthMeasured();
+
+	int MAX_POINTS = 0;	
+    StThreeVector<double> xyz;
+	double nsig = 0;
+    int hypothesis = 0;
+
+	MAX_POINTS = 10*length*helix.curvature() + 1;		
+	nsig = 1000;
+	hypothesis = 0;
+	if (fabs(track->nSigmaElectron()) < nsig) {
+		nsig = fabs(track->nSigmaElectron());
+		hypothesis = 1;
+	}
+	if (fabs(track->nSigmaPion()) < nsig) {
+		nsig = track->nSigmaPion();
+		hypothesis = 2;
+	}
+	if (fabs(track->nSigmaProton()) < nsig) {
+		nsig = track->nSigmaProton();
+		hypothesis = 3;
+	}
+	if (fabs(track->nSigmaKaon()) < nsig) {
+		nsig = track->nSigmaKaon();
+		hypothesis = 4;
+	}
+	
+	float pt = length / float(MAX_POINTS);
+
+	std::stringstream sstr;
+	if ( prependComma )
+		sstr << " ,";
+	sstr << "{ "; 
+		sstr << "\t\"pt\": " << TMath::Floor(track->pt() * 1000 +  0.5) / 1000 << ",";
+		sstr << "\t\"t\": " << hypothesis << ", ";
+		sstr << "\t\"e\": " << TMath::Floor(track->eta() * 1000 +  0.5) / 1000 << ",";
+		sstr << "\t\"p\": " << TMath::Floor(track->phi() * 1000 +  0.5) / 1000 << ",";
+		
+		if (track->primaryTrack()) {
+			sstr << "\t\"pr\": " << 1 << ",";
+		} else {
+			sstr << "\t\"pr\": " << 0 << ",";
+		}
+
+
+		sstr << "\t\"c\": " << track->charge() << ",";
+		
+		sstr << "\t\"pts\": [";
+			for (int j = -10; j <= MAX_POINTS * 2; j++) {
+				xyz = helix.at(j*pt);
+				if (xyz.perp() < 5.0 || xyz.perp() > 205.0) break; // point is outside of TPC range
+				if ( j != -10 ) {
+					sstr << ", [" << int(xyz.x()) << "," << int(xyz.y()) << "," << int(xyz.z()) << "]";
+				} else {
+					sstr << "[" << int(xyz.x()) << "," << int(xyz.y()) << "," << int(xyz.z()) << "]";
+				}
+			}
+		sstr << "\t]\n";
+		sstr << "}\n";
+
+	return sstr.str();
 
 }
 
@@ -472,9 +671,9 @@ StMuPrimaryVertex* FemtoDstWriter::chooseVertex() {
 		vnPrimary.push_back(nPrimary);
 		vnMatched.push_back(nBTofMatch);
 
-		if ( iDoubleMatch < 0 && nPrimary == 2 && nBTofMatch == 2 )
+		if ( iDoubleMatch < 0 && nPrimary >= 2 && nBTofMatch >= 2 )
 			iDoubleMatch = iVert;
-		if ( iSingleMatch < 0 && nPrimary == 2 && nBTofMatch == 1 )
+		if ( iSingleMatch < 0 && nPrimary >= 2 && nBTofMatch == 1 )
 			iSingleMatch = iVert;
 		if ( iNoMatch < 0 && nPrimary == 2 && nBTofMatch == 0 )
 			iNoMatch = iVert;
@@ -482,6 +681,12 @@ StMuPrimaryVertex* FemtoDstWriter::chooseVertex() {
 	}
 
 	LOG_INFO << "iDoubleMatch=" << iDoubleMatch << ", iSingleMatch=" << iSingleMatch << ", iNoMatch=" << iNoMatch << endm;
+	int nPossibleVerts = 0;
+	if ( iDoubleMatch >= 0) nPossibleVerts++;
+	if ( iSingleMatch >= 0) nPossibleVerts++;
+	if ( iNoMatch >= 0) nPossibleVerts++;
+	LOG_INFO << "nPossibleVerts=" << nPossibleVerts << endm;
+
 
 	if ( iDoubleMatch >= 0 ){
 		this->_StMuDst->setVertexIndex( iDoubleMatch );
